@@ -3,4 +3,5 @@ db=sqlite3.connect(os.path.join(os.path.dirname(os.path.abspath(__file__)),"emai
 def send(subj,body):msg=EmailMessage();msg["From"],msg["To"],msg["Subject"]=r[0],r[1],subj;msg.set_content(body);s=smtplib.SMTP_SSL("smtp.gmail.com",465);s.login(r[0],r[2]);s.sendmail(r[0],r[1],msg.as_string());print(f"Sent '{subj}' to {r[1]}")
 if 'sched'in sys.argv:print("1)DEMO(5s,once) 2)Every 5min 3)Hourly 4)Daily");c={"1":"--on-active=5s","2":"--on-calendar=*:0/5","3":"--on-calendar=hourly","4":"--on-calendar=daily"}.get(input("Choice: "),"--on-active=5s");os.system(f'systemd-run --user {c} -- {sys.executable} {os.path.abspath(__file__)} run 2>&1 | tee /tmp/sched.log');exit()
 if 'run'in sys.argv:send("systemd-test",str(time.time()));time.sleep(2);send("systemd-test",str(time.time()));exit()
+if 'msg'in sys.argv:send(sys.argv[2],sys.argv[3]);exit()
 send(input("subject: "),input("body: "))
