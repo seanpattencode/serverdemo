@@ -1,10 +1,10 @@
-import sqlite3,os,sys,time;p=os.path.dirname(os.path.abspath(__file__));d=sqlite3.connect(f"{p}/hdb.db");d.execute("CREATE TABLE IF NOT EXISTS c(k,v)");d.execute("CREATE TABLE IF NOT EXISTS l(t,m)")
-def cnt():t=d.execute("SELECT v FROM c WHERE k='t'").fetchone();r=max(0,float(t[0])-time.time())if t else 0;return f"{int(r//86400)}d {int(r%86400//3600)}h {int(r%3600//60)}m {int(r%60)}s"
-if 'set'in sys.argv:d.execute("DELETE FROM c");d.execute("INSERT INTO c VALUES('t',?)",(time.time()+float(input("Days until refill: "))*86400,));d.commit();was_on=not os.popen("systemctl --user is-active 'run-*.service' 2>/dev/null").read().strip().find("active");os.system("systemctl --user stop 'run-*.service' 2>/dev/null");was_on and os.system(f'systemd-run --user -- {sys.executable} {os.path.abspath(__file__)} run >/dev/null 2>&1');exit(print(f"Set: {cnt()}{' (restarted)'if was_on else''}"))
-if 'run'in sys.argv:
- while 1:m=cnt();a=" sent"if time.strftime("%H:%M:%S")=="11:11:00"and not os.system(f'{sys.executable} {p}/send_email.py msg "Nootropic Refill" "{m}"')else"";d.execute("INSERT INTO l VALUES(?,?)",(time.time(),m+a));d.commit();print(m+a);time.sleep(1)
-if 'start'in sys.argv:os.system(f'systemd-run --user -- {sys.executable} {os.path.abspath(__file__)} run');exit(print("Started"))
-if 'stop'in sys.argv:os.system("systemctl --user stop 'run-*.service'");exit(print("Stopped"))
-if 'log'in sys.argv:[print(time.strftime("%H:%M:%S",time.localtime(r[0])),r[1])for r in d.execute("SELECT*FROM l ORDER BY t DESC LIMIT 10")];exit()
-if 'status'in sys.argv:exit(print("Refill in: "+cnt()))
-run="ON"if not os.popen("systemctl --user is-active 'run-*.service' 2>/dev/null").read().strip().find("active")else"OFF";last=d.execute("SELECT t,m FROM l WHERE m LIKE '% sent%' ORDER BY t DESC LIMIT 1").fetchone();nxt=(86400+time.mktime(time.strptime(time.strftime("%Y-%m-%d")+" 11:11","%Y-%m-%d %H:%M"))-time.time())%86400;print(f"[{run}] {cnt()} | Next: {int(nxt//3600)}h{int(nxt%3600//60)}m | Last: {time.strftime('%m-%d %H:%M',time.localtime(last[0]))+' ('+last[1].split()[0]+')'if last else'never'}\nUsage: set|start|stop|log|status")
+#!/usr/bin/env python3
+import sqlite3,os,sys,time;from datetime import datetime as D;P=os.path.dirname(os.path.abspath(__file__));DB=sqlite3.connect(f"{P}/hdb.db");DB.executescript("CREATE TABLE IF NOT EXISTS c(k PRIMARY KEY,v);CREATE TABLE IF NOT EXISTS l(t,m)")
+T0,SPD=time.time(),float(os.environ.get("SPD",1));now=lambda:T0+(time.time()-T0)*SPD;rem=lambda:(lambda s:f"{int(s//86400)}d {int(s%86400//3600)}h {int(s%3600//60)}m")(max(0,(lambda r:float(r[0])-now()if r else 0)(DB.execute("SELECT v FROM c WHERE k='t'").fetchone())))
+on=lambda:"active"in os.popen("systemctl --user is-active 'run-*.service' 2>/dev/null").read();svc=lambda a:os.system(f'systemd-run --user -- {sys.executable} {__file__} run'if a else"systemctl --user stop 'run-*.service' 2>/dev/null");cmd=sys.argv[1]if len(sys.argv)>1 else""
+if cmd=="set":DB.execute("REPLACE INTO c VALUES('t',?)",(now()+float(sys.argv[2]if len(sys.argv)>2 else input("Days: "))*86400,));DB.commit();w=on();w and(svc(0),svc(1));print(f"Set: {rem()}")
+elif cmd=="run":
+ while 1:t=now();m=rem();h=D.fromtimestamp(t);sent=" sent"if h.hour==11 and(SPD==1 and h.minute==11 or SPD>1)and not DB.execute("SELECT 1 FROM l WHERE m LIKE'%sent%'AND t>?",(t-43200,)).fetchone()and(SPD>1 or not os.system(f'{sys.executable} {P}/send_email.py msg "Refill" "{m}"'))else"";DB.execute("INSERT INTO l VALUES(?,?)",(t,m+sent));DB.commit();print(f"[{h:%m-%d %H:%M:%S}] {m}{sent}",flush=1);time.sleep(1/SPD)
+elif cmd in("start","stop"):svc(cmd=="start");print("Started"if cmd=="start"else"Stopped")
+elif cmd=="log":[print(f"{D.fromtimestamp(t):%m-%d %H:%M:%S} {m}")for t,m in DB.execute("SELECT*FROM l ORDER BY t DESC LIMIT 20")]
+else:print(f"[{'ON'if on()else'OFF'}] {rem()}\nCommands: set [days]|start|stop|log  (SPD=N to speed up time N×)")
