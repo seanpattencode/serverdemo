@@ -1,4 +1,6 @@
-smtplib,sqlite3,EmailMessage=__import__('smtplib'),__import__('sqlite3'),__import__('email.message',fromlist=['EmailMessage']).EmailMessage
-db=sqlite3.connect("email.db");db.execute("CREATE TABLE IF NOT EXISTS c(f,t,p)");r=db.execute("SELECT*FROM c").fetchone()or(db.execute("INSERT INTO c VALUES(?,?,?)",[input(x+": ")for x in["from","to","pass"]]),db.commit(),db.execute("SELECT*FROM c").fetchone())[2]
-msg=EmailMessage();msg["From"],msg["To"],msg["Subject"]=r[0],r[1],input("subject: ");msg.set_content(input("body: "))
-s=smtplib.SMTP_SSL("smtp.gmail.com",465);s.login(r[0],r[2]);s.sendmail(r[0],r[1],msg.as_string());print(f"Sent '{msg['Subject']}' from {r[0]} to {r[1]}")
+smtplib,sqlite3,EmailMessage,sys,time,os=__import__('smtplib'),__import__('sqlite3'),__import__('email.message',fromlist=['EmailMessage']).EmailMessage,__import__('sys'),__import__('time'),__import__('os')
+db=sqlite3.connect(os.path.join(os.path.dirname(os.path.abspath(__file__)),"email.db"));db.execute("CREATE TABLE IF NOT EXISTS c(f,t,p)");r=db.execute("SELECT*FROM c").fetchone()or(db.execute("INSERT INTO c VALUES(?,?,?)",[input(x+": ")for x in["from","to","pass"]]),db.commit(),db.execute("SELECT*FROM c").fetchone())[2]
+def send(subj,body):msg=EmailMessage();msg["From"],msg["To"],msg["Subject"]=r[0],r[1],subj;msg.set_content(body);s=smtplib.SMTP_SSL("smtp.gmail.com",465);s.login(r[0],r[2]);s.sendmail(r[0],r[1],msg.as_string());print(f"Sent '{subj}' to {r[1]}")
+if 'sched'in sys.argv:print("1)DEMO(5s,once) 2)Every 5min 3)Hourly 4)Daily");c={"1":"--on-active=5s","2":"--on-calendar=*:0/5","3":"--on-calendar=hourly","4":"--on-calendar=daily"}.get(input("Choice: "),"--on-active=5s");os.system(f'systemd-run --user {c} -- {sys.executable} {os.path.abspath(__file__)} run 2>&1 | tee /tmp/sched.log');exit()
+if 'run'in sys.argv:send("systemd-test",str(time.time()));time.sleep(2);send("systemd-test",str(time.time()));exit()
+send(input("subject: "),input("body: "))
