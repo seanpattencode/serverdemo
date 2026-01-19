@@ -6,7 +6,7 @@ def decode(url): return new_decoderv1(url).get('decoded_url', url) if 'news.goog
 def fetch(url):
     try: req=urllib.request.Request(decode(url), headers={'User-Agent':'Mozilla/5.0'}); r=urllib.request.urlopen(req, timeout=10); return r.read().decode('utf-8','ignore'), r.geturl()
     except: return '', ''
-conn = sqlite3.connect("feeds.db"); conn.execute("CREATE TABLE IF NOT EXISTS feeds(url TEXT UNIQUE)"); os.chmod("feeds.db", 0o666)
+conn = sqlite3.connect("feeds.db"); conn.execute("CREATE TABLE IF NOT EXISTS feeds(url TEXT UNIQUE)"); exec("try: os.chmod('feeds.db', 0o666)\nexcept: pass")
 while True:
     feeds = conn.execute("SELECT rowid,url FROM feeds").fetchall()
     print("\nRSS CHECKER\nFeeds:", *[f"  {i+1}. {f[1]}" for i,f in enumerate(feeds)] or ["  (none)"], "\n[r]un [a]dd [d]elete [q]uit", sep="\n")
