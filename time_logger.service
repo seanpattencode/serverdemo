@@ -1,0 +1,12 @@
+[Unit]
+Description=Time Logger
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/sean/projects/demo/time_logger.py
+WorkingDirectory=/home/sean/projects/demo
+Restart=always
+StandardInput=tty
+
+[Install]
+WantedBy=multi-user.target
