@@ -11,7 +11,7 @@ while True:
     feeds = conn.execute("SELECT rowid,url FROM feeds").fetchall()
     print("\nRSS CHECKER\nFeeds:", *[f"  {f[0]}. {f[1]}" for f in feeds] or ["  (none)"], "\n[r]un [a]dd [d]elete [q]uit", sep="\n")
     c = input("> ").lower()
-    if c == 'a': conn.execute("INSERT OR IGNORE INTO feeds VALUES(?)", (input("URL: "),)); conn.commit()
+    if c == 'a': conn.execute("INSERT OR IGNORE INTO feeds VALUES(?)", (input("URL: ").strip(),)); conn.commit()
     elif c == 'd': conn.execute("DELETE FROM feeds WHERE rowid=?", (input("ID: "),)); conn.commit()
     elif c == 'q': break
     elif c == 'r':
