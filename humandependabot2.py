@@ -1,8 +1,7 @@
-smtplib,sqlite3,EmailMessage,sys,time,os=__import__('smtplib'),__import__('sqlite3'),__import__('email.message',fromlist=['EmailMessage']).EmailMessage,__import__('sys'),__import__('time'),__import__('os')
-db=sqlite3.connect("m.db");db.execute("PRAGMA journal_mode=WAL");db.execute("CREATE TABLE IF NOT EXISTS l(t)");med=sys.argv[2] if len(sys.argv)>2 else "11:11"
-if 'setup' in sys.argv: open('/etc/systemd/system/med.service','w').write(f"[Unit]\n[Service]\nExecStart={sys.executable} {os.path.abspath(__file__)} run {med}\nRestart=always\n[Install]\nWantedBy=multi-user.target");os.system("systemctl enable --now med")
-if 'demo' in sys.argv: [os.system(f"python3 send_email.py msg 'Demo Day {i+1}' 'Take meds' && echo 'Day {i+1}'>>demo.log") for i in range(7)]
-if 'run' in sys.argv:
- while True:
-  time.sleep(1); n=time.strftime("%H:%M:%S"); print(n); db.execute("INSERT INTO l VALUES(?)",(n,)); db.commit()
-  if n==med+":00": os.system(f"python3 send_email.py msg 'MEDICATION TIME' 'It is {med}'")
+import sqlite3,sys,time,os;db=sqlite3.connect("m.db");db.execute("CREATE TABLE IF NOT EXISTS c(k,v)");db.execute("CREATE TABLE IF NOT EXISTS l(t,m)")
+def rem():r=db.execute("SELECT v FROM c WHERE k='t'").fetchone();s=max(0,float(r[0])-time.time())if r else 0;return f"{int(s//86400)}d {int(s%86400//3600)}h {int(s%3600//60)}m"
+if 'set'in sys.argv:db.execute("DELETE FROM c");db.execute("INSERT INTO c VALUES('t',?)",(time.time()+float(sys.argv[2])*86400,));db.commit();print(f"Set: {rem()}")
+if 'demo'in sys.argv:[os.system(f"python3 send_email.py msg 'Demo Day {i+1}' '{rem()}'")for i in range(7)]
+if 'run'in sys.argv:
+ while 1:t=time.time();m=rem();last=db.execute("SELECT m FROM l ORDER BY t DESC LIMIT 1").fetchone();sent=" sent"if time.strftime("%H:%M")=="11:11"and(not last or"sent"not in last[0])and not os.system(f"python3 send_email.py msg 'Refill (v2)' '{m}'")else"";db.execute("INSERT INTO l VALUES(?,?)",(t,m+sent));db.commit();print(f"[{time.strftime('%H:%M:%S')}] {m}{sent}",flush=1);time.sleep(1)
+if not sys.argv[1:]or'status'in sys.argv:print(f"{rem()}\nCommands: set <days>|run|demo|status")
