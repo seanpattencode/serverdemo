@@ -7,4 +7,5 @@ elif cmd=="run":
  while 1:t=now();r=time.time();m=rem();h=D.fromtimestamp(t);sent=" sent"if h.hour==11 and(SPD==1 and h.minute==11 or SPD>1)and not DB.execute("SELECT 1 FROM l WHERE m LIKE'%sent%'AND t>?",(r-43200,)).fetchone()and(SPD>1 or not os.system(f'{sys.executable} {P}/send_email.py msg "Refill (v1)" "{m}"'))else"";DB.execute("INSERT INTO l VALUES(?,?)",(r,m+sent));DB.commit();print(f"[{h:%m-%d %H:%M:%S}] {m}{sent}",flush=1);time.sleep(1/SPD)
 elif cmd in("start","stop"):svc(cmd=="start");print("Started"if cmd=="start"else"Stopped")
 elif cmd=="log":[print(f"{D.fromtimestamp(t):%m-%d %H:%M:%S} {m}")for t,m in DB.execute("SELECT*FROM l ORDER BY t DESC LIMIT 20")]
-else:print(f"[{'ON'if on()else'OFF'}] {rem()}\nCommands: set [days]|start|stop|log  (SPD=N to speed up time N×)")
+elif cmd=="test":[(os.system(f'{sys.executable} {P}/send_email.py msg "TEST v1 #{i}" "Test mode: emails every 1min. Countdown: {rem()}"'),print(f"[TEST #{i}] sent",flush=1),time.sleep(60))for i in __import__('itertools').count()]
+else:print(f"[{'ON'if on()else'OFF'}] {rem()}\nCommands: set [days]|start|stop|log|test")

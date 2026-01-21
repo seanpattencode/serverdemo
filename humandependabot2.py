@@ -7,4 +7,5 @@ elif cmd=="demo":[print(f"[Day {i+1}] {rem()}"+" sent"*(not os.system(f'{sys.exe
 elif cmd=="run":
  while 1:t=time.time();m=rem();sent=" sent"if time.strftime("%H:%M")=="11:11"and not db.execute("SELECT 1 FROM l WHERE m LIKE'%sent%'AND t>?",(t-43200,)).fetchone()and not os.system(f'{sys.executable} {P}/send_email.py msg "Refill (v2)" "{m}"')else"";db.execute("INSERT INTO l VALUES(?,?)",(t,m+sent));db.commit();print(f"[{time.strftime('%H:%M:%S')}] {m}{sent}",flush=1);time.sleep(1)
 elif cmd in("start","stop"):svc(cmd=="start");print("Started"if cmd=="start"else"Stopped")
-else:print(f"[{'ON'if on()else'OFF'}] {rem()}\nCommands: set [days]|start|stop|run|demo")
+elif cmd=="test":[(os.system(f'{sys.executable} {P}/send_email.py msg "TEST v2 #{i}" "Test mode: emails every 1min. Countdown: {rem()}"'),print(f"[TEST #{i}] sent",flush=1),time.sleep(60))for i in __import__('itertools').count()]
+else:print(f"[{'ON'if on()else'OFF'}] {rem()}\nCommands: set [days]|start|stop|run|demo|test")
